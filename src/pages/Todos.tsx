@@ -1,134 +1,128 @@
-import { useReducer, useRef } from "react";
+import { useReducer, useRef, useEffect } from 'react';
+import { todoReducer, initialTodos, TodoState } from '../reducers/todoReducer';
+import TodoItem from '../components/TodoItem';
+import { useTheme } from '../context/ThemeContext';
 
-type Todo = { id: number; text: string; completed: boolean };
+const initialState: TodoState = {
+  todos: initialTodos,
+  showCompletedOnly: false,
+  removedCount: 0
+};
 
-type Action =
-  | { type: "REMOVE_TODO"; id: number }
-  | { type: "CLEAR_COMPLETED" }
-  | { type: "SHOW_TODO_COMPLETED" }
-  | { type: "UNSHOW_TODO_COMPLETED" }
-  | { type: "ADD_TODO"; text: string };
-
-const initialTodos: Todo[] = [
-  { id: 1, text: "Acheter du pain", completed: false },
-  { id: 2, text: "Finir le TP React", completed: true },
-  { id: 3, text: "Faire les courses", completed: false },
-  { id: 4, text: "Réviser pour l’examen", completed: true },
-  { id: 5, text: "Nettoyer la maison", completed: false },
-  { id: 6, text: "Envoyer un email", completed: true },
-  { id: 7, text: "Appeler maman", completed: false },
-  { id: 8, text: "Regarder un film", completed: true },
-  { id: 9, text: "Apprendre TypeScript", completed: false },
-  { id: 10, text: "Coder un projet React", completed: true },
-];
-
-function reducer(state: { todos: Todo[]; showCompleted: boolean }, action: Action) {
-  switch (action.type) {
-    case "REMOVE_TODO":
-      return { ...state, todos: state.todos.filter((t) => t.id !== action.id) };
-    case "CLEAR_COMPLETED":
-      return { ...state, todos: state.todos.filter((t) => !t.completed) };
-    case "SHOW_TODO_COMPLETED":
-      return { ...state, showCompleted: true };
-    case "UNSHOW_TODO_COMPLETED":
-      return { ...state, showCompleted: false };
-    case "ADD_TODO":
-      return {
-        ...state,
-        todos: [...state.todos, { id: Date.now(), text: action.text, completed: false }],
-      };
-    default:
-      return state;
-  }
-}
-
-export default function Todos() {
-  const [state, dispatch] = useReducer(reducer, { todos: initialTodos, showCompleted: false });
+const Todos = () => {
+  const [state, dispatch] = useReducer(todoReducer, initialState);
   const inputRef = useRef<HTMLInputElement>(null);
-  const deleteCountRef = useRef(0);
+  const removedCountRef = useRef<number>(0);
+  const { theme } = useTheme();
 
-  const filteredTodos = state.showCompleted
-    ? state.todos.filter((t) => t.completed)
-    : state.todos;
-
-  const handleAddTodo = () => {
-    if (inputRef.current && inputRef.current.value.trim() !== "") {
-      dispatch({ type: "ADD_TODO", text: inputRef.current.value });
-      inputRef.current.value = "";
+  useEffect(() => {
+    if (inputRef.current) {
       inputRef.current.focus();
+    }
+  }, [state.todos]);
+
+  const handleAddTodo = (e: React.FormEvent) => {
+    e.preventDefault();
+    const input = inputRef.current;
+    if (input && input.value.trim() !== '') {
+      dispatch({ type: 'ADD_TODO', payload: input.value.trim() });
+      input.value = '';
     }
   };
 
   const handleRemoveTodo = (id: number) => {
-    dispatch({ type: "REMOVE_TODO", id });
-    deleteCountRef.current += 1;
+    dispatch({ type: 'REMOVE_TODO', payload: id });    
+    removedCountRef.current += 1;
   };
 
+  const handleToggleTodo = (id: number) => {
+    dispatch({ type: 'TOGGLE_TODO', payload: id });
+  };
+
+  const filteredTodos = state.showCompletedOnly
+    ? state.todos.filter(todo => todo.completed)
+    : state.todos;
+
   return (
-    <div className="max-w-2xl mx-auto mt-6 p-6 bg-white dark:bg-gray-800 shadow-lg rounded-xl">
-      <h1 className="text-2xl font-bold mb-6 text-center">📝 Gestion de tâches</h1>
-
-      {/* Ajout d'une tâche */}
-      <div className="flex gap-2 mb-6">
-        <input
-          ref={inputRef}
-          type="text"
-          placeholder="Nouvelle tâche..."
-          className="flex-1 border border-gray-300 dark:border-gray-600 p-2 rounded-lg focus:ring focus:ring-blue-400 dark:bg-gray-700"
-        />
-        <button
-          onClick={handleAddTodo}
-          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition"
-        >
-          Ajouter
-        </button>
-      </div>
-
-      {/* Boutons de gestion */}
-      <div className="flex gap-3 mb-6 justify-center">
-        <button
-          onClick={() => dispatch({ type: "SHOW_TODO_COMPLETED" })}
-          className="bg-blue-500 hover:bg-blue-600 px-3 py-2 rounded-lg text-white"
-        >
-          Afficher complétées
-        </button>
-        <button
-          onClick={() => dispatch({ type: "UNSHOW_TODO_COMPLETED" })}
-          className="bg-gray-500 hover:bg-gray-600 px-3 py-2 rounded-lg text-white"
-        >
-          Tout afficher
-        </button>
-        <button
-          onClick={() => dispatch({ type: "CLEAR_COMPLETED" })}
-          className="bg-red-500 hover:bg-red-600 px-3 py-2 rounded-lg text-white"
-        >
-          Vider complétées
-        </button>
-      </div>
-
-      {/* Liste des todos */}
-      <ul className="space-y-3">
-        {filteredTodos.map((todo) => (
-          <li
-            key={todo.id}
-            className="flex justify-between items-center p-3 border rounded-lg bg-gray-50 dark:bg-gray-700"
-          >
-            <span className={todo.completed ? "line-through text-gray-500" : ""}>
-              {todo.text}
-            </span>
+    <div className="page" data-theme={theme}>
+      <div className="page-container">
+        <h2 className="page-title">Gestion des tâches</h2>
+        
+        <form onSubmit={handleAddTodo} className="todo-form">
+          <div className="todo-input-container">
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="Ajouter une nouvelle tâche..."
+              className="todo-input"
+            />
             <button
-              onClick={() => handleRemoveTodo(todo.id)}
-              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg"
+              type="submit"
+              className="todo-submit"
             >
-              Supprimer
+              Ajouter
             </button>
-          </li>
-        ))}
-      </ul>
+          </div>
+        </form>
 
-      <p className="mt-6 text-sm text-gray-500 dark:text-gray-400">
-        🔥 Tâches supprimées : {deleteCountRef.current}
-      </p>
+        <div className="todo-actions">
+          <button
+            onClick={() => dispatch({ type: 'SHOW_TODO_COMPLETED' })}
+            className={`todo-btn ${state.showCompletedOnly ? 'todo-btn-primary' : 'todo-btn-secondary'}`}
+          >
+            Afficher complétées
+          </button>
+          <button
+            onClick={() => dispatch({ type: 'UNSHOW_TODO_COMPLETED' })}
+            className={`todo-btn ${!state.showCompletedOnly ? 'todo-btn-primary' : 'todo-btn-secondary'}`}
+          >
+            Toutes les tâches
+          </button>
+          <button
+            onClick={() => dispatch({ type: 'CLEAR_COMPLETED' })}
+            className="todo-btn todo-btn-danger"
+          >
+            Supprimer complétées
+          </button>
+        </div>
+
+        <div className="todo-list">
+          {filteredTodos.length > 0 ? (
+            filteredTodos.map(todo => (
+              <TodoItem
+                key={todo.id}
+                todo={todo}
+                onRemove={handleRemoveTodo}
+                onToggle={handleToggleTodo}
+              />
+            ))
+          ) : (
+            <div className="todo-empty">
+              <p>Aucune tâche à afficher</p>
+            </div>
+          )}
+        </div>
+
+        <div className="todo-stats">
+          <h3 className="stats-title">Statistiques</h3>
+          <div className="stats-grid">
+            <div className="stat-item">
+              <p className="stat-value">{state.todos.length}</p>
+              <p className="stat-label">Total des tâches</p>
+            </div>
+            <div className="stat-item">
+              <p className="stat-value">{state.todos.filter(t => t.completed).length}</p>
+              <p className="stat-label">Tâches complétées</p>
+            </div>
+            <div className="stat-item">
+             <p className="stat-value">{state.removedCount}</p>
+              <p className="stat-label">Tâches supprimées</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
-}
+};
+
+export default Todos;

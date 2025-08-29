@@ -1,18 +1,53 @@
-import { useContext } from "react";
-import { ThemeContext } from "../context/ThemeContext";
+import { useTheme } from '../context/ThemeContext';
 
-export default function Settings() {
-  const { theme, toggleTheme } = useContext(ThemeContext);
+const Settings = () => {
+  const { theme, toggleTheme } = useTheme();
 
   return (
-    <div className="max-w-lg mx-auto mt-6 p-6 bg-white dark:bg-gray-800 shadow-lg rounded-xl text-center">
-      <h1 className="text-2xl font-bold mb-6">⚙️ Paramètres</h1>
-      <button
-        onClick={toggleTheme}
-        className="px-6 py-3 rounded-lg bg-purple-500 hover:bg-purple-600 text-white transition"
-      >
-        Passer en mode {theme === "light" ? "🌙 sombre" : "☀️ clair"}
-      </button>
+    <div className="page" data-theme={theme}>
+      <div className="page-container">
+        <h2 className="page-title">Paramètres</h2>
+        
+        <div className="settings-card">
+          <h3 className="settings-title">Préférences d'affichage</h3>
+          
+          <div className="theme-toggle">
+            <div className="theme-info">
+              <p className="theme-name">Thème sombre</p>
+              <p className="theme-description">
+                Activer/désactiver le mode sombre
+              </p>
+            </div>
+            <label className="toggle-switch">
+              <input 
+                type="checkbox" 
+                checked={theme === 'dark'} 
+                onChange={toggleTheme}
+              />
+              <span className="toggle-slider"></span>
+            </label>
+          </div>
+          
+          <div className="theme-status">
+            <p>
+              Le thème <span className="font-medium">{theme === 'dark' ? 'sombre' : 'clair'}</span> est actuellement activé.
+            </p>
+          </div>
+        </div>
+
+        <div className="about-card">
+          <h3 className="about-title">À propos</h3>
+          <p className="about-text">
+            Cette application de gestion de tâches a été développée avec React, TypeScript et CSS personnalisé.
+          </p>
+          <p className="about-text">
+            Elle inclut des fonctionnalités telles que la persistance du thème, le filtrage des tâches,
+            et des statistiques en temps réel.
+          </p>
+        </div>
+      </div>
     </div>
   );
-}
+};
+
+export default Settings;
